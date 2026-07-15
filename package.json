@@ -1,0 +1,32 @@
+{
+  "name": "sediment",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sediment — a persistent community archaeology game for Reddit.",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n WEB,API -c blue,magenta \"npm run dev -w apps/web\" \"npm run dev -w server\"",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:server": "npm run dev -w server",
+    "build": "npm run build -w packages/shared && npm run build -w packages/ui && npm run build -w packages/game && npm run build -w server && npm run build -w apps/web",
+    "lint": "npm run lint -w apps/web && npm run lint -w server",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run build -w packages/shared && npm run build -w packages/ui && npm run build -w packages/game && npm run test -w packages/game --if-present && npm run test -w server --if-present && npm run test -w apps/web --if-present",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "db:migrate": "node database/run-migrations.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

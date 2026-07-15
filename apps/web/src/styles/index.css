@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-[#050608] text-sand-100 font-body antialiased;
+    background-image: radial-gradient(circle at 50% 0%, rgba(219, 157, 43, 0.08), transparent 50%),
+      radial-gradient(circle at 50% 100%, rgba(53, 124, 114, 0.05), transparent 50%);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-stone-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-bronze-700 rounded-full;
+  }
+}
+
+@layer utilities {
+  .reduced-motion {
+    animation: none !important;
+    transition: none !important;
+  }
+}
