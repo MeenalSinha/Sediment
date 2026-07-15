@@ -1,14 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BookOpen } from "lucide-react";
 import { Panel, Button } from "@sediment/ui";
 import { useSedimentStore } from "@/lib/store";
+import { bridge } from "@/lib/devvit-bridge";
 
 export function JournalPage() {
   const journal = useSedimentStore((s) => s.journal);
   const addJournalEntry = useSedimentStore((s) => s.addJournalEntry);
   const reducedMotion = useSedimentStore((s) => s.settings.reducedMotion);
   const [draft, setDraft] = useState("");
+
+  // Load journal entries from Devvit Redis on mount
+  useEffect(() => {
+    bridge.send({ type: "get_journal" });
+    const off = bridge.on("journal_list", (msg) => {
+      // Sync Redis entries into local store (entries from other sessions)
+      for (const entry of msg.entries) {
+        addJournalEntry(entry.body);
+      }
+    });
+    return off;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleSave() {
+    const body = draft.trim();
+    if (!body) return;
+    addJournalEntry(body);
+    bridge.send({ type: "add_journal_entry", body }); // persist to Redis
+    setDraft("");
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
@@ -29,10 +51,7 @@ export function JournalPage() {
             variant="gold"
             size="sm"
             disabled={!draft.trim()}
-            onClick={() => {
-              addJournalEntry(draft.trim());
-              setDraft("");
-            }}
+            onClick={handleSave}
           >
             Save Entry
           </Button>
@@ -65,3 +84,4 @@ export function JournalPage() {
     </div>
   );
 }
+

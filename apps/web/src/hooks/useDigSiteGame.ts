@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createDigSiteGame, type DigSiteGameHandle } from "@sediment/game";
 import type { ToolId } from "@sediment/shared";
 import { useSedimentStore } from "@/lib/store";
+import { bridge } from "@/lib/devvit-bridge";
 
 export interface UseDigSiteGameOptions {
   artifactImageUrl: string;
@@ -13,6 +14,7 @@ export function useDigSiteGame({ artifactImageUrl, dirtImageUrl, onArtifactRevea
   const containerRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<DigSiteGameHandle | null>(null);
   const activeTool = useSedimentStore((s) => s.activeTool);
+  const activeLayer = useSedimentStore((s) => s.activeLayer);
   const setProgressPercent = useSedimentStore((s) => s.setProgressPercent);
   const applyDurabilityCost = useSedimentStore((s) => s.applyDurabilityCost);
 
@@ -26,9 +28,32 @@ export function useDigSiteGame({ artifactImageUrl, dirtImageUrl, onArtifactRevea
       artifactImageUrl,
       dirtImageUrl,
       initialTool: activeTool,
-      onProgress: setProgressPercent,
+      onProgress: (percent) => {
+        setProgressPercent(percent);
+
+        // Send dig stroke to Devvit backend (throttled: only every ~2% increment)
+        if (activeLayer && percent % 2 < 0.5) {
+          bridge.send({
+            type: "dig_stroke",
+            layerId: activeLayer.id,
+            toolId: activeTool as ToolId,
+            clearedDelta: 0.02, // 2% per batch
+          });
+        }
+      },
       onToolDurabilityUsed: (_tool: ToolId, cost: number) => applyDurabilityCost(cost),
-      onArtifactRevealed,
+      onArtifactRevealed: () => {
+        // Notify backend that a full reveal happened
+        if (activeLayer) {
+          bridge.send({
+            type: "dig_stroke",
+            layerId: activeLayer.id,
+            toolId: activeTool as ToolId,
+            clearedDelta: 1, // full clear
+          });
+        }
+        onArtifactRevealed?.();
+      },
     });
 
     return () => {

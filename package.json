@@ -2,24 +2,24 @@
   "name": "sediment",
   "version": "0.1.0",
   "private": true,
-  "description": "Sediment — a persistent community archaeology game for Reddit.",
+  "description": "Sediment — a persistent community archaeology game for Reddit (Devvit).",
   "workspaces": [
     "apps/*",
     "packages/*",
-    "server"
+    "src"
   ],
   "scripts": {
-    "dev": "concurrently -k -n WEB,API -c blue,magenta \"npm run dev -w apps/web\" \"npm run dev -w server\"",
+    "dev": "npm run dev -w apps/web",
     "dev:web": "npm run dev -w apps/web",
-    "dev:server": "npm run dev -w server",
-    "build": "npm run build -w packages/shared && npm run build -w packages/ui && npm run build -w packages/game && npm run build -w server && npm run build -w apps/web",
-    "lint": "npm run lint -w apps/web && npm run lint -w server",
+    "dev:devvit": "cd src && devvit playtest",
+    "build": "npm run build -w packages/shared && npm run build -w packages/ui && npm run build -w packages/game && npm run build -w apps/web",
+    "build:devvit": "npm run build -w src",
+    "lint": "npm run lint -w apps/web",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm run build -w packages/shared && npm run build -w packages/ui && npm run build -w packages/game && npm run test -w packages/game --if-present && npm run test -w server --if-present && npm run test -w apps/web --if-present",
-    "docker:up": "docker compose up --build",
-    "docker:down": "docker compose down",
-    "db:migrate": "node database/run-migrations.js"
+    "test": "npm run build -w packages/shared && npm run build -w packages/ui && npm run build -w packages/game && npm run test -w packages/game --if-present && npm run test -w apps/web --if-present",
+    "upload": "cd src && devvit upload",
+    "publish:devvit": "cd src && devvit publish"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
@@ -30,3 +30,4 @@
     "node": ">=20.0.0"
   }
 }
+
