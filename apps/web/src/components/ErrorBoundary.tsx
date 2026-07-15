@@ -50,6 +50,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           >
             Try Again
           </button>
+          <div className="mt-6 text-left text-xs text-red-400 bg-black p-4 rounded overflow-auto w-full max-h-64 whitespace-pre-wrap break-all">
+            {this.state.error?.toString()}
+            <br />
+            {this.state.error?.stack}
+          </div>
         </div>
       );
     }

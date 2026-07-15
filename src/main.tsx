@@ -1,4 +1,5 @@
-import { Devvit, useState } from "@devvit/public-api";
+// v0.0.3.15 — trigger upload with full webroot
+import { Devvit, useState, useChannel } from "@devvit/public-api";
 import type {
   WebViewMessage,
   DevvitMessage,
@@ -13,7 +14,6 @@ import type {
 Devvit.configure({
   redditAPI: true,
   redis: true,
-  realtime: true,
 });
 
 // ─── Redis key helpers ───────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ const KEY = {
   diggerCount: (subredditId: string) => `sediment:diggers:${subredditId}`,
 };
 
-const CHANNEL = (subredditId: string) => `sediment-events-${subredditId}`;
+const CHANNEL = "sediment_events";
 
 // ─── Seed data helpers ───────────────────────────────────────────────────────
 function makeLayer(subredditId: string, index: number): DigLayerData {
@@ -111,7 +111,7 @@ async function getArtifacts(context: Devvit.Context, subredditId: string): Promi
 // ─── Broadcast a realtime event to subreddit subscribers ─────────────────────
 async function broadcast(context: Devvit.Context, subredditId: string, event: RealtimeEvent) {
   try {
-    await context.realtime.send(CHANNEL(subredditId), event);
+    await context.realtime.send(CHANNEL, event as any);
   } catch {
     // Realtime is best-effort; swallow errors so game is not disrupted
   }
@@ -126,13 +126,25 @@ Devvit.addCustomPostType({
   render: (context) => {
     const [webviewVisible, setWebviewVisible] = useState(false);
 
+    const channel = useChannel({
+      name: "sediment_events",
+      onMessage: (msg) => {
+        context.ui.webView.postMessage("sediment-webview", {
+          type: "realtime_event",
+          event: msg,
+        } as any);
+      },
+    });
+    channel.subscribe();
+
     // ── Handle messages coming FROM the WebView ──────────────────────────────
     async function onMessage(msg: WebViewMessage) {
       const { reddit, redis, realtime } = context;
 
       // Get subreddit info
-      const subreddit = await reddit.getCurrentSubreddit();
-      const subredditId = `r_${subreddit.name}`;
+      // Hack to avoid `invalid comment media type: video` bug in @devvit/public-api 0.11
+      const subName = context.subredditName || "unknown_subreddit";
+      const subredditId = `r_${subName}`;
       const currentUser = await reddit.getCurrentUser();
       const username = currentUser?.username ?? "anonymous";
 
@@ -145,17 +157,15 @@ Devvit.addCustomPostType({
           const layer = layerRaw ? (JSON.parse(layerRaw) as DigLayerData) : null;
           const artifacts = await getArtifacts(context, subredditId);
 
-          // Subscribe this user to realtime events on mount
-          await realtime.subscribe(CHANNEL(subredditId));
 
           const reply: DevvitMessage = {
             type: "initial_data",
             username,
-            subredditName: subreddit.name,
+            subredditName: subName,
             layer,
             artifacts,
           };
-          context.ui.webView.postMessage("sediment-webview", reply);
+          context.ui.webView.postMessage("sediment-webview", reply as any);
           break;
         }
 
@@ -212,7 +222,7 @@ Devvit.addCustomPostType({
             context.ui.webView.postMessage("sediment-webview", {
               type: "layer_updated",
               layer: JSON.parse(updatedLayerRaw) as DigLayerData,
-            } satisfies DevvitMessage);
+            } as any);
           }
           break;
         }
@@ -245,7 +255,7 @@ Devvit.addCustomPostType({
           context.ui.webView.postMessage("sediment-webview", {
             type: "artifact_updated",
             artifact,
-          } satisfies DevvitMessage);
+          } as any);
           break;
         }
 
@@ -270,7 +280,7 @@ Devvit.addCustomPostType({
             type: "lore_list",
             artifactId,
             lore,
-          } satisfies DevvitMessage);
+          } as any);
           break;
         }
 
@@ -290,7 +300,7 @@ Devvit.addCustomPostType({
             type: "lore_list",
             artifactId,
             lore: updated,
-          } satisfies DevvitMessage);
+          } as any);
           break;
         }
 
@@ -303,7 +313,7 @@ Devvit.addCustomPostType({
             type: "lore_list",
             artifactId,
             lore,
-          } satisfies DevvitMessage);
+          } as any);
           break;
         }
 
@@ -325,7 +335,7 @@ Devvit.addCustomPostType({
           context.ui.webView.postMessage("sediment-webview", {
             type: "journal_list",
             entries: journal.slice(0, 50),
-          } satisfies DevvitMessage);
+          } as any);
           break;
         }
 
@@ -336,7 +346,7 @@ Devvit.addCustomPostType({
           context.ui.webView.postMessage("sediment-webview", {
             type: "journal_list",
             entries: journal.slice(0, 50),
-          } satisfies DevvitMessage);
+          } as any);
           break;
         }
 
@@ -348,10 +358,10 @@ Devvit.addCustomPostType({
           context.ui.webView.postMessage("sediment-webview", {
             type: "initial_data",
             username,
-            subredditName: subreddit.name,
+            subredditName: subName,
             layer,
             artifacts,
-          } satisfies DevvitMessage);
+          } as any);
           break;
         }
 
@@ -362,7 +372,7 @@ Devvit.addCustomPostType({
             context.ui.webView.postMessage("sediment-webview", {
               type: "layer_updated",
               layer: JSON.parse(layerRaw) as DigLayerData,
-            } satisfies DevvitMessage);
+            } as any);
           }
           break;
         }
@@ -372,52 +382,19 @@ Devvit.addCustomPostType({
       }
     }
 
-    // ── Realtime listener: forward events to WebView ─────────────────────────
-    context.realtime.subscribe(
-      // The channel will be determined per-subreddit at runtime
-      // We catch all events and forward them
-      `sediment-events-*`,
-      (event: RealtimeEvent) => {
-        context.ui.webView.postMessage("sediment-webview", {
-          type: "realtime_event",
-          event,
-        } satisfies DevvitMessage);
-      },
-    );
 
-    // ── Render ────────────────────────────────────────────────────────────────
+
+    // ── Render ── DIAGNOSTIC: bare minimum webview test ──────────────────────
     return (
-      <vstack grow padding="none">
-        {!webviewVisible && (
-          <vstack grow alignment="middle center">
-            <image
-              url="sediment-logo.png"
-              imageWidth={200}
-              imageHeight={60}
-              description="Sediment logo"
-            />
-            <spacer size="medium" />
-            <text size="medium" color="neutral-content-weak">
-              Uncover. Restore. Remember.
-            </text>
-            <spacer size="medium" />
-            <button
-              appearance="primary"
-              onPress={() => setWebviewVisible(true)}
-            >
-              🏺 Enter the Dig Site
-            </button>
-          </vstack>
-        )}
-        {webviewVisible && (
-          <webview
-            id="sediment-webview"
-            url="index.html"
-            onMessage={(msg) => onMessage(msg as WebViewMessage)}
-            grow
-            height="100%"
-          />
-        )}
+      <vstack height="100%" width="100%" padding="none">
+        <webview
+          id="sediment-webview"
+          url="index.html"
+          onMessage={(msg) => onMessage(msg as WebViewMessage)}
+          grow
+          width="100%"
+          height="100%"
+        />
       </vstack>
     );
   },
@@ -427,11 +404,12 @@ Devvit.addCustomPostType({
 Devvit.addMenuItem({
   label: "🏺 Start a Sediment Dig",
   location: "subreddit",
-  onPress: async (event, context) => {
-    const subreddit = await context.reddit.getCurrentSubreddit();
-    await context.reddit.submitPost({
-      title: `r/${subreddit.name} Community Dig — The Excavation Begins!`,
-      subredditName: subreddit.name,
+  onPress: async (_event, context) => {
+    // Hack to avoid `invalid comment media type: video` bug in @devvit/public-api 0.11
+    const subName = context.subredditName || "unknown_subreddit";
+    const post = await context.reddit.submitPost({
+      title: `r/${subName} Community Dig — The Excavation Begins!`,
+      subredditName: subName,
       preview: (
         <vstack grow alignment="middle center" padding="large">
           <text size="xlarge" weight="bold">
@@ -442,8 +420,9 @@ Devvit.addMenuItem({
           </text>
         </vstack>
       ),
-    });
+    } as any);
     context.ui.showToast("✅ Sediment dig post created!");
+    context.ui.navigateTo(post);
   },
 });
 

@@ -61,7 +61,7 @@ export function CurrentDiscoveryPanel({
       <dl className="mb-4 space-y-1.5 text-sm">
         <Row label="Material" value={artifact.material} />
         <Row label="Period" value={artifact.period} />
-        <Row label="Found By" value={`${artifact.discoveredBy.length} diggers today`} />
+        <Row label="Found By" value={`${artifact.discoveredBy?.length ?? 0} diggers today`} />
       </dl>
 
       <div className="flex gap-2">

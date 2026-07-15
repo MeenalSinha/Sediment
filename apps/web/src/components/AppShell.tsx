@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { TopBar } from "@/components/TopBar";
 import { Sidebar } from "@/components/Sidebar";
 import { BottomEventBar } from "@/components/BottomEventBar";
@@ -19,16 +19,15 @@ import {
   demoUser,
 } from "@/lib/mockData";
 
-// Every page after the first is a separate lazy chunk — Phaser (packages/game) only
-// loads once the Dig Site page actually mounts, and each secondary page (Museum,
-// Journal, etc.) is fetched on first visit rather than bundled into the initial load.
-const DigSitePage = lazy(() => import("@/pages/DigSite").then((m) => ({ default: m.DigSitePage })));
-const MuseumPage = lazy(() => import("@/pages/MuseumPage").then((m) => ({ default: m.MuseumPage })));
-const JournalPage = lazy(() => import("@/pages/JournalPage").then((m) => ({ default: m.JournalPage })));
-const CivilizationPage = lazy(() => import("@/pages/CivilizationPage").then((m) => ({ default: m.CivilizationPage })));
-const RolesPage = lazy(() => import("@/pages/RolesPage").then((m) => ({ default: m.RolesPage })));
-const EventsPage = lazy(() => import("@/pages/EventsPage").then((m) => ({ default: m.EventsPage })));
-const ShopPage = lazy(() => import("@/pages/ShopPage").then((m) => ({ default: m.ShopPage })));
+// Static imports — dynamic lazy() imports break in Devvit WebView because chunk
+// files cannot be fetched from the sandboxed iframe. Everything must be in one bundle.
+import { DigSitePage } from "@/pages/DigSite";
+import { MuseumPage } from "@/pages/MuseumPage";
+import { JournalPage } from "@/pages/JournalPage";
+import { CivilizationPage } from "@/pages/CivilizationPage";
+import { RolesPage } from "@/pages/RolesPage";
+import { EventsPage } from "@/pages/EventsPage";
+import { ShopPage } from "@/pages/ShopPage";
 
 const PAGE_LABELS: Record<string, string> = {
   dig_site: "Dig Site",

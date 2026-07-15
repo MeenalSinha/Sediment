@@ -3,13 +3,14 @@ import { env } from "../config/env";
 
 let client: OpenAI | null = null;
 
-function getClient(): OpenAI {
+function getClient(): OpenAI | null {
   if (!client) {
     if (!env.openai.apiKey) {
-      throw new Error(
+      console.warn(
         "OPENAI_API_KEY is not set. AI-assisted features (lore polishing, inscription translation, " +
-          "civilization generation) are disabled until it is configured in your .env file.",
+          "civilization generation) will gracefully fall back to default text.",
       );
+      return null;
     }
     client = new OpenAI({ apiKey: env.openai.apiKey });
   }
@@ -17,7 +18,10 @@ function getClient(): OpenAI {
 }
 
 export async function polishLore(rawText: string): Promise<string> {
-  const completion = await getClient().chat.completions.create({
+  const aiClient = getClient();
+  if (!aiClient) return rawText;
+
+  const completion = await aiClient.chat.completions.create({
     model: env.openai.model,
     messages: [
       {
@@ -36,7 +40,10 @@ export async function polishLore(rawText: string): Promise<string> {
 }
 
 export async function translateInscription(inscriptionDescription: string): Promise<string> {
-  const completion = await getClient().chat.completions.create({
+  const aiClient = getClient();
+  if (!aiClient) return "A mysterious inscription, currently undecipherable.";
+
+  const completion = await aiClient.chat.completions.create({
     model: env.openai.model,
     messages: [
       {
@@ -61,7 +68,10 @@ export interface GeneratedCivilization {
 }
 
 export async function generateCivilization(subredditName: string): Promise<GeneratedCivilization> {
-  const completion = await getClient().chat.completions.create({
+  const aiClient = getClient();
+  if (!aiClient) return { name: "The Forgotten Kingdom", originStory: "An ancient civilization lost to time, waiting to be discovered." };
+
+  const completion = await aiClient.chat.completions.create({
     model: env.openai.model,
     messages: [
       {
@@ -93,7 +103,10 @@ export async function summarizeArtifact(input: {
   material: string;
   period: string;
 }): Promise<string> {
-  const completion = await getClient().chat.completions.create({
+  const aiClient = getClient();
+  if (!aiClient) return "An artifact from a bygone era.";
+
+  const completion = await aiClient.chat.completions.create({
     model: env.openai.model,
     messages: [
       {

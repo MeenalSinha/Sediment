@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig({
+  base: "./",
   plugins: [react()],
   resolve: {
     alias: {
@@ -10,16 +11,9 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 900,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          phaser: ["phaser"],
-          "vendor-animation": ["framer-motion", "gsap"],
-          "vendor-react": ["react", "react-dom"],
-        },
-      },
-    },
+    outDir: "../../webroot",
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 2000,
   },
   server: {
     port: 5173,

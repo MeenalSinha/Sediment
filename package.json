@@ -1,12 +1,13 @@
 {
-  "name": "sediment",
-  "version": "0.1.0",
+  "name": "sediment-game",
+  "version": "0.0.0",
   "private": true,
   "description": "Sediment — a persistent community archaeology game for Reddit (Devvit).",
   "workspaces": [
     "apps/*",
     "packages/*",
-    "src"
+    "src",
+    "server"
   ],
   "scripts": {
     "dev": "npm run dev -w apps/web",
@@ -28,6 +29,11 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "type": "module",
+  "dependencies": {
+    "@devvit/public-api": "0.13.8",
+    "@devvit/tsconfig": "0.13.8"
+  },
+  "license": "BSD-3-Clause"
 }
-

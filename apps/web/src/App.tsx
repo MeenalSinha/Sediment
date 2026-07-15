@@ -4,6 +4,7 @@ import { useSedimentStore } from "@/lib/store";
 import { bridge } from "@/lib/devvit-bridge";
 import type { DevvitMessage } from "../../../src/types.js";
 import type { Artifact, DigLayer } from "@sediment/shared";
+import { demoUser } from "@/lib/mockData";
 
 /**
  * App.tsx — Devvit WebView edition
@@ -31,14 +32,22 @@ export default function App() {
       setUser({
         id: msg.username,
         redditUsername: msg.username,
-        subredditId: `r_${msg.subredditName}`,
-        role: "archaeologist",
+        redditId: `u_${msg.username}`,
+        avatarUrl: `https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png`,
+        flair: null,
         level: 1,
         xp: 0,
+        xpToNextLevel: 1000,
+        rank: 100,
         digEnergy: 100,
-        avatarUrl: `https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png`,
-        joinedAt: new Date().toISOString(),
-      });
+        maxDigEnergy: 100,
+        nextEnergyAt: null,
+        coins: 50,
+        gems: 10,
+        roles: [],
+        activeRole: "archaeologist",
+        createdAt: new Date().toISOString(),
+      } as any); // cast to any because we dropped subredditId and role from SedimentUser in types but it might still exist in some types
 
       // Set dig layer
       if (msg.layer) {
@@ -65,7 +74,7 @@ export default function App() {
         rarity: a.rarity as Artifact["rarity"],
         status: a.status as Artifact["status"],
         condition: a.condition,
-        discoveredBy: a.discoveredBy ?? undefined,
+        discoveredBy: a.discoveredBy ?? [],
         discoveredAt: a.discoveredAt ?? undefined,
         imageUrl: a.imageUrl ?? undefined,
         layerId: msg.layer?.id ?? "",
@@ -134,7 +143,17 @@ export default function App() {
         <div className="mt-2 h-1 w-48 overflow-hidden rounded-full bg-stone-800">
           <div className="h-full w-full animate-pulse rounded-full bg-gold-500/60" />
         </div>
-        <p className="text-xs text-stone-600">Loading your subreddit's dig site…</p>
+        <p className="text-xs text-stone-600 mb-4">Loading your subreddit's dig site…</p>
+        
+        {/* Fallback for local development */}
+        {import.meta.env.DEV && (
+          <button 
+            onClick={() => setUser(demoUser)}
+            className="px-6 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-md text-sm font-semibold transition-colors shadow-sm"
+          >
+            View Demo
+          </button>
+        )}
       </div>
     );
   }

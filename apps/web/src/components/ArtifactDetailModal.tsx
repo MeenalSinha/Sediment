@@ -69,7 +69,7 @@ export function ArtifactDetailModal({ open, onClose, artifact, lore, onVote, onS
           <dl className="mt-3 space-y-1.5 text-sm">
             <Row label="Material" value={artifact.material ?? "Unknown"} />
             <Row label="Period" value={artifact.period ?? "Unclassified"} />
-            <Row label="Discoverers" value={`${artifact.discoveredBy.length} diggers`} />
+            <Row label="Discoverers" value={`${artifact.discoveredBy?.length ?? 0} diggers`} />
             <Row label="Status" value={artifact.status.replace("_", " ")} />
           </dl>
           {artifact.aiSummary && (
